@@ -1,27 +1,18 @@
 package main
 
 import (
-	"errors"
-	"fmt"
-	"tixgo/pkg/syserr"
+	"context"
+
+	"github.com/pkg/errors"
+
+	pkgCtx "tixgo/pkg/ctx"
+	"tixgo/pkg/logger"
 )
 
 func main() {
-	// errWrapped := syserr.Wrap(err, syserr.InternalCode, "test error", syserr.F("test", "test"))
-	// fmt.Println(errWrapped.Error())
+	ctx := context.Background()
+	ctx = pkgCtx.WithOperationID(ctx, "123")
 
-	// fmt.Println(errWrapped.Code())
-	// fmt.Println(errWrapped.Fields())
-
-	// _ = errWrapped.StackFormatted()
-	// fmt.Println(x)
-
-	// err = syserr.Wrap(err, syserr.InternalCode, "test error 2")
-	// fmt.Println(err.Error())
-	fmt.Println("Hello world")
 	err := errors.New("test error")
-	fmt.Println(err)
-
-	errx := syserr.Wrap(err, syserr.InternalCode, "test error 2")
-	fmt.Println(errx.StackFormatted())
+	logger.LogError(ctx, err)
 }
