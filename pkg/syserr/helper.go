@@ -17,19 +17,20 @@ func GetCodeFromGenericError(err error) Code {
 	}
 
 	for {
-		if sErr, ok := err.(*Error); ok {
+		var sErr *Error
+		if errors.As(err, &sErr) {
 			return sErr.Code()
 		}
 
-		switch x := err.(type) {
-		case interface{ Unwrap() error }:
-			err := x.Unwrap()
+		var unwrapError interface{ Unwrap() error }
+		if errors.As(err, &unwrapError) {
+			err = unwrapError.Unwrap()
 			if err == nil {
 				return InternalCode
 			}
-		default:
-			return InternalCode
+			continue
 		}
+		return InternalCode
 	}
 }
 
@@ -41,15 +42,19 @@ func GetFieldsFromGenericError(err error) []*Field {
 			return result
 		}
 
-		if sErr, ok := err.(*Error); ok {
+		var sErr *Error
+		if errors.As(err, &sErr) {
 			result = append(result, sErr.Fields()...)
 		}
 
-		switch x := err.(type) {
-		case interface{ Unwrap() error }:
-			err = x.Unwrap()
-		default:
-			return result
+		var unwrapError interface{ Unwrap() error }
+		if errors.As(err, &unwrapError) {
+			err = unwrapError.Unwrap()
+			if err == nil {
+				return result
+			}
+			continue
 		}
+		return result
 	}
 }

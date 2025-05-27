@@ -1,6 +1,8 @@
 package ctx
 
-import "context"
+import (
+	"context"
+)
 
 type operationIDKey string
 
@@ -19,8 +21,10 @@ func WithOperationID(ctx context.Context, operationID string) context.Context {
 func GetOperationID(ctx context.Context) string {
 	value := ctx.Value(OperationIDKey)
 	if value != nil {
-		return value.(string)
+		if operationID, ok := value.(string); ok {
+			return operationID
+		}
 	}
 
-	return ""
+	return "" // fallback to empty string
 }

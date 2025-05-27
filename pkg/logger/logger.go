@@ -7,8 +7,9 @@ import (
 	"os"
 	"sync"
 
-	pkgCtx "tixgo/pkg/ctx"
 	"tixgo/pkg/syserr"
+
+	pkgCtx "tixgo/pkg/ctx"
 )
 
 type Config struct {
@@ -43,7 +44,6 @@ func Init(cfg *Config) {
 
 		logger = slog.New(handler)
 	})
-
 }
 
 type Field struct {
@@ -101,14 +101,18 @@ func addOperationID(ctx context.Context, fields []*Field) []*Field {
 	return fields
 }
 
+const (
+	slotsPerField = 2
+)
+
 func convertFields(fields []*Field) []any {
-	result := make([]any, len(fields)*2)
+	result := make([]any, len(fields)*slotsPerField)
 
 	index := 0
 	for _, field := range fields {
 		result[index] = field.key
 		result[index+1] = field.value
-		index += 2
+		index += slotsPerField
 	}
 
 	return result

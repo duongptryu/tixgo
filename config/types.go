@@ -27,17 +27,18 @@ type Server struct {
 }
 
 type Database struct {
-	Type         string        `mapstructure:"type" validate:"required,oneof=postgres mysql sqlite"`
-	Host         string        `mapstructure:"host" validate:"required,hostname"`
-	Port         int           `mapstructure:"port" validate:"required,min=1,max=65535"`
-	User         string        `mapstructure:"user" validate:"required,alphanum"`
-	Password     string        `mapstructure:"password" validate:"required,alphanum"`
-	Name         string        `mapstructure:"name" validate:"required,ascii"`
-	SSLMode      string        `mapstructure:"ssl_mode" validate:"omitempty,oneof=disable prefer require verify-ca verify-full"`
-	MaxOpenConns int           `mapstructure:"max_open_conns" validate:"required,min=1"`
-	MaxIdleConns int           `mapstructure:"max_idle_conns" validate:"required,min=1"`
-	MaxLifetime  time.Duration `mapstructure:"max_lifetime" validate:"required,min=1s"`
-	MaxIdleTime  time.Duration `mapstructure:"max_idle_time" validate:"required,min=1s"`
+	Type          string        `mapstructure:"type" validate:"required,oneof=postgres mysql sqlite"`
+	Host          string        `mapstructure:"host" validate:"required,hostname"`
+	Port          int           `mapstructure:"port" validate:"required,min=1,max=65535"`
+	User          string        `mapstructure:"user" validate:"required,alphanum"`
+	Password      string        `mapstructure:"password" validate:"required,alphanum"`
+	Name          string        `mapstructure:"name" validate:"required,ascii"`
+	SSLMode       string        `mapstructure:"ssl_mode" validate:"omitempty,oneof=disable prefer require verify-ca verify-full"`
+	MaxOpenConns  int           `mapstructure:"max_open_conns" validate:"required,min=1"`
+	MaxIdleConns  int           `mapstructure:"max_idle_conns" validate:"required,min=1"`
+	MaxLifetime   time.Duration `mapstructure:"max_lifetime" validate:"required,min=1s"`
+	MaxIdleTime   time.Duration `mapstructure:"max_idle_time" validate:"required,min=1s"`
+	MigrationPath string        `mapstructure:"migration_path" validate:"required,dir"`
 }
 
 func (c *AppConfig) Validate() error {
