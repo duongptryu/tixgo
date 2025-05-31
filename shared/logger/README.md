@@ -31,7 +31,7 @@ This package provides a structured, context-aware logger for Go services, built 
 ## Usage Example
 
 ```go
-import "tixgo/pkg/logger"
+import "tixgo/internal/common/logger"
 
 func main() {
     logger.Init(&logger.Config{

@@ -10,6 +10,7 @@ type AppConfig struct {
 	App      App      `mapstructure:"app"`
 	Server   Server   `mapstructure:"server"`
 	Database Database `mapstructure:"database"`
+	JWT      JWT      `mapstructure:"jwt"`
 }
 
 type App struct {
@@ -38,7 +39,13 @@ type Database struct {
 	MaxIdleConns  int           `mapstructure:"max_idle_conns" validate:"required,min=1"`
 	MaxLifetime   time.Duration `mapstructure:"max_lifetime" validate:"required,min=1s"`
 	MaxIdleTime   time.Duration `mapstructure:"max_idle_time" validate:"required,min=1s"`
-	MigrationPath string        `mapstructure:"migration_path" validate:"required,dir"`
+	MigrationPath string        `mapstructure:"migration_path" validate:"required"`
+}
+
+type JWT struct {
+	SecretKey          string        `mapstructure:"secret_key" validate:"required"`
+	AccessTokenExpiry  time.Duration `mapstructure:"access_token_expiry" validate:"required,min=1s"`
+	RefreshTokenExpiry time.Duration `mapstructure:"refresh_token_expiry" validate:"required,min=1s"`
 }
 
 func (c *AppConfig) Validate() error {

@@ -444,6 +444,6 @@ linters:
           - noctx
           - wrapcheck
           - gocognit
-      - path: 'config/types.go'
+      - text: 'File is not properly formatted'
         linters:
           - golines

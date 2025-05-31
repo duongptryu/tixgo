@@ -7,9 +7,8 @@ import (
 	"os"
 	"sync"
 
-	"tixgo/pkg/syserr"
-
-	pkgCtx "tixgo/pkg/ctx"
+	pkgContext "tixgo/shared/context"
+	"tixgo/shared/syserr"
 )
 
 type Config struct {
@@ -59,23 +58,23 @@ func F(key string, value any) *Field {
 }
 
 func Warning(ctx context.Context, message string, fields ...*Field) {
-	logger.Warn(message, convertFields(addOperationID(ctx, fields))...)
+	logger.Warn(message, convertFields(extractContextFields(ctx, fields))...)
 }
 
 func Error(ctx context.Context, message string, fields ...*Field) {
-	logger.Error(message, convertFields(addOperationID(ctx, fields))...)
+	logger.Error(message, convertFields(extractContextFields(ctx, fields))...)
 }
 
 func Info(ctx context.Context, message string, fields ...*Field) {
-	logger.Info(message, convertFields(addOperationID(ctx, fields))...)
+	logger.Info(message, convertFields(extractContextFields(ctx, fields))...)
 }
 
 func Debug(ctx context.Context, message string, fields ...*Field) {
-	logger.Debug(message, convertFields(addOperationID(ctx, fields))...)
+	logger.Debug(message, convertFields(extractContextFields(ctx, fields))...)
 }
 
 func Fatal(ctx context.Context, message string, fields ...*Field) {
-	logger.Error(message, convertFields(addOperationID(ctx, fields))...)
+	logger.Error(message, convertFields(extractContextFields(ctx, fields))...)
 	os.Exit(1)
 }
 
@@ -88,14 +87,29 @@ func LogError(ctx context.Context, err error, fields ...*Field) {
 	Error(ctx, err.Error(), fields...)
 }
 
-func addOperationID(ctx context.Context, fields []*Field) []*Field {
+func extractContextFields(ctx context.Context, fields []*Field) []*Field {
 	if ctx == nil {
 		return fields
 	}
 
-	operationID := pkgCtx.GetOperationID(ctx)
+	operationID := pkgContext.GetOperationID(ctx)
 	if operationID != "" {
-		return append(fields, F("operation_id", operationID))
+		fields = append(fields, F("operation_id", operationID))
+	}
+
+	requestID := pkgContext.GetRequestID(ctx)
+	if requestID != "" {
+		fields = append(fields, F("request_id", requestID))
+	}
+
+	userID := pkgContext.GetUserIDFromContext(ctx)
+	if userID != "" {
+		fields = append(fields, F("user_id", userID))
+	}
+
+	userType := pkgContext.GetUserTypeFromContext(ctx)
+	if userType != "" {
+		fields = append(fields, F("user_type", userType))
 	}
 
 	return fields

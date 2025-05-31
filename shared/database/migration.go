@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 	"tixgo/config"
-	"tixgo/pkg/syserr"
+	"tixgo/shared/syserr"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
