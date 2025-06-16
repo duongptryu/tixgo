@@ -3,6 +3,7 @@ package middleware
 import (
 	"errors"
 	"net/http"
+	"tixgo/shared/logger"
 	"tixgo/shared/response"
 	"tixgo/shared/syserr"
 
@@ -24,18 +25,21 @@ func handleError(c *gin.Context, err error) {
 	var sysErr *syserr.Error
 	if errors.As(err, &sysErr) {
 		// statusCode := getHTTPStatusCode(sysErr.Code())
-		response.NewErrorResponse(
+		c.JSON(http.StatusOK, response.NewErrorResponse(
 			string(sysErr.Code()),
 			sysErr.Error(),
 			nil,
-		).JSON(c, http.StatusOK)
+		))
 		return
 	}
 
+	// log error
+	logger.LogError(c.Request.Context(), err)
+
 	// Default error
-	response.NewErrorResponse(
+	c.JSON(http.StatusOK, response.NewErrorResponse(
 		"internal_error",
 		"An error occurred",
 		nil,
-	).JSON(c, http.StatusInternalServerError)
+	))
 }

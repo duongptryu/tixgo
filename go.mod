@@ -14,9 +14,16 @@ require (
 require github.com/lib/pq v1.10.9
 
 require (
+	github.com/ThreeDotsLabs/watermill v1.4.6
 	github.com/gin-gonic/gin v1.10.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/jmoiron/sqlx v1.4.0
+)
+
+require (
+	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
+	github.com/oklog/ulid v1.3.1 // indirect
 )
 
 require (
