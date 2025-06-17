@@ -16,10 +16,15 @@ database:
   port: 5432
   user: postgres
   password: postgres
-  name: tixgo_dev
+  name: tixgo
   ssl_mode: disable
   max_open_conns: 10
   max_idle_conns: 5
   max_lifetime: 3600s
   max_idle_time: 3600s
-  migration_path: file://migrations
+  migration_path: file:///Users/admin/Developer/tixgo/migrations
+
+jwt:
+  secret_key: "secret"
+  access_token_expiry: 900s
+  refresh_token_expiry: 604800s

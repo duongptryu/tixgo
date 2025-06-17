@@ -3,136 +3,116 @@ package ports
 import (
 	"net/http"
 
-	"tixgo/modules/user/app"
+	"tixgo/components"
+	"tixgo/modules/user/adapters"
 	"tixgo/modules/user/app/command"
 	"tixgo/modules/user/app/query"
-	"tixgo/shared/auth"
+	"tixgo/shared/context"
 	"tixgo/shared/middleware"
 	"tixgo/shared/response"
-	"tixgo/shared/syserr"
 
 	"github.com/gin-gonic/gin"
 )
 
-// HTTPHandler handles HTTP requests for user operations
-type HTTPHandler struct {
-	userService *app.UserService
-	jwtService  *auth.JWTService
-}
-
-// NewHTTPHandler creates a new HTTP handler
-func NewHTTPHandler(userService *app.UserService, jwtService *auth.JWTService) *HTTPHandler {
-	return &HTTPHandler{
-		userService: userService,
-		jwtService:  jwtService,
-	}
-}
-
-// RegisterRoutes registers the user routes
-func (h *HTTPHandler) RegisterRoutes(router *gin.Engine) {
+func RegisterUserRoutes(router *gin.RouterGroup, appCtx components.AppContext) {
 	userGroup := router.Group("/users")
 	{
-		userGroup.POST("/register", h.RegisterUser)
-		userGroup.POST("/verify-otp", h.VerifyOTP)
-		userGroup.POST("/login", h.LoginUser)
+		userGroup.POST("/register", RegisterUser(appCtx))
+		userGroup.POST("/verify-otp", VerifyOTP(appCtx))
+		userGroup.POST("/login", LoginUser(appCtx))
 
-		userGroup.Use(middleware.RequireAuth(h.jwtService))
-		userGroup.GET("/profile", h.GetUserProfile)
+		userGroup.Use(middleware.RequireAuth(appCtx.GetJWTService()))
+		userGroup.GET("/profile", GetUserProfile(appCtx))
 	}
 }
 
-// RegisterUser handles user registration
-func (h *HTTPHandler) RegisterUser(c *gin.Context) {
-	var req command.RegisterUserCommand
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(err)
-		return
-	}
+func RegisterUser(appCtx components.AppContext) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req command.RegisterUserCommand
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.Error(err)
+			return
+		}
 
-	cmd := command.RegisterUserCommand{
-		Email:     req.Email,
-		Password:  req.Password,
-		FirstName: req.FirstName,
-		LastName:  req.LastName,
-		UserType:  req.UserType,
-	}
+		userRepo := adapters.NewUserPostgresRepository(appCtx.GetDB())
+		otpStore := adapters.NewInMemoryOTPStore()
 
-	result, err := h.userService.RegisterUser(c.Request.Context(), cmd)
-	if err != nil {
-		c.Error(err)
-		return
-	}
+		biz := command.NewRegisterUserHandler(userRepo, otpStore)
 
-	response.NewSimpleSuccessResponse(result).JSON(c, http.StatusCreated)
+		result, err := biz.Handle(c.Request.Context(), req)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.JSON(http.StatusCreated, response.NewSimpleSuccessResponse(result))
+	}
 }
 
-// VerifyOTP handles OTP verification
-func (h *HTTPHandler) VerifyOTP(c *gin.Context) {
-	var req command.VerifyOTPCommand
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(err)
-		return
-	}
+func VerifyOTP(appCtx components.AppContext) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req command.VerifyOTPCommand
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.Error(err)
+			return
+		}
 
-	cmd := command.VerifyOTPCommand{
-		Email: req.Email,
-		OTP:   req.OTP,
-	}
+		userRepo := adapters.NewUserPostgresRepository(appCtx.GetDB())
+		otpStore := adapters.NewInMemoryOTPStore()
 
-	result, err := h.userService.VerifyOTP(c.Request.Context(), cmd)
-	if err != nil {
-		c.Error(err)
-		return
-	}
+		biz := command.NewVerifyOTPHandler(userRepo, otpStore)
 
-	response.NewSimpleSuccessResponse(result).JSON(c, http.StatusOK)
+		result, err := biz.Handle(c.Request.Context(), req)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.JSON(http.StatusOK, response.NewSimpleSuccessResponse(result))
+	}
 }
 
-// LoginUser handles user login
-func (h *HTTPHandler) LoginUser(c *gin.Context) {
-	var req command.LoginUserCommand
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(err)
-		return
-	}
+func LoginUser(appCtx components.AppContext) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req command.LoginUserCommand
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.Error(err)
+			return
+		}
 
-	cmd := command.LoginUserCommand{
-		Email:    req.Email,
-		Password: req.Password,
-	}
+		userRepo := adapters.NewUserPostgresRepository(appCtx.GetDB())
 
-	result, err := h.userService.LoginUser(c.Request.Context(), cmd)
-	if err != nil {
-		c.Error(err)
-		return
-	}
+		biz := command.NewLoginUserHandler(userRepo, appCtx.GetJWTService())
 
-	response.NewSimpleSuccessResponse(result).JSON(c, http.StatusOK)
+		result, err := biz.Handle(c.Request.Context(), req)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.JSON(http.StatusOK, response.NewSimpleSuccessResponse(result))
+	}
 }
 
-// GetUserProfile handles getting user profile
-func (h *HTTPHandler) GetUserProfile(c *gin.Context) {
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.Error(syserr.New(syserr.UnauthorizedCode, "user not authenticated"))
-		return
-	}
+func GetUserProfile(appCtx components.AppContext) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userIDInt64, err := context.GetUserIDFromContextAsInt64(c.Request.Context())
+		if err != nil {
+			c.Error(err)
+			return
+		}
 
-	userIDInt64, ok := userID.(int64)
-	if !ok {
-		c.Error(syserr.New(syserr.InternalCode, "invalid user ID"))
-		return
-	}
+		userRepo := adapters.NewUserPostgresRepository(appCtx.GetDB())
+		biz := query.NewGetUserProfileHandler(userRepo)
 
-	query := query.GetUserProfileQuery{
-		UserID: userIDInt64,
-	}
+		result, err := biz.Handle(c.Request.Context(), query.GetUserProfileQuery{
+			UserID: userIDInt64,
+		})
+		if err != nil {
+			c.Error(err)
+			return
+		}
 
-	result, err := h.userService.GetUserProfile(c.Request.Context(), query)
-	if err != nil {
-		c.Error(err)
-		return
+		c.JSON(http.StatusOK, response.NewSimpleSuccessResponse(result))
 	}
-
-	response.NewSimpleSuccessResponse(result).JSON(c, http.StatusOK)
 }

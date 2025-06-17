@@ -58,3 +58,19 @@ func GetFieldsFromGenericError(err error) []*Field {
 		return result
 	}
 }
+
+func UnwrapError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	for {
+		var sErr *Error
+		if errors.As(err, &sErr) {
+			err = sErr.Unwrap()
+			continue
+		}
+
+		return err
+	}
+}

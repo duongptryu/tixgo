@@ -8,6 +8,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 type MigrationManager struct {
@@ -34,7 +35,7 @@ func NewMigrationManager(db *sql.DB, databaseConfig *config.Database) (*Migratio
 
 	m, err := migrate.NewWithDatabaseInstance(
 		databaseConfig.MigrationPath,
-		databaseConfig.Type,
+		databaseConfig.Name,
 		driver,
 	)
 	if err != nil {

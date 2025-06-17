@@ -2,17 +2,22 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 
+	"tixgo/components"
 	"tixgo/config"
-	"tixgo/modules/user"
+	"tixgo/modules/user/ports"
+	"tixgo/shared/auth"
 	"tixgo/shared/database"
 	"tixgo/shared/logger"
 	"tixgo/shared/server/httpserver"
+	"tixgo/shared/syserr"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
@@ -22,7 +27,7 @@ func main() {
 	logger.Init(&logger.Config{
 		Level:     slog.LevelInfo,
 		Output:    os.Stdout,
-		AddSource: true,
+		AddSource: false,
 	})
 
 	ctx := context.Background()
@@ -52,14 +57,14 @@ func main() {
 		logger.Fatal(ctx, "Failed to run migrations", logger.F("error", err))
 	}
 
-	// Initialize modules
-	modules, err := initializeModules(ctx, db, cfg)
+	// Initialize app context
+	appCtx, err := setupAppCtx(ctx, cfg, db)
 	if err != nil {
-		logger.Fatal(ctx, "Failed to initialize modules", logger.F("error", err))
+		logger.Fatal(ctx, "Failed to initialize app context", logger.F("error", err))
 	}
 
 	// Setup HTTP server using server package
-	srv := setupHTTPServer(ctx, cfg, modules)
+	srv := setupHTTPServer(ctx, cfg, appCtx)
 
 	// Start server with graceful shutdown
 	startServer(ctx, srv)
@@ -105,7 +110,7 @@ func runMigrations(ctx context.Context, db *sqlx.DB, cfg *config.Database) error
 	// Run migrations up
 	if err := migrationManager.Up(); err != nil {
 		// Check if it's "no change" error, which is acceptable
-		if err.Error() == "no change" {
+		if errors.Is(syserr.UnwrapError(err), migrate.ErrNoChange) {
 			logger.Info(ctx, "No new migrations to apply")
 			return nil
 		}
@@ -116,35 +121,17 @@ func runMigrations(ctx context.Context, db *sqlx.DB, cfg *config.Database) error
 	return nil
 }
 
-type Modules struct {
-	UserModule *user.Module
+func setupAppCtx(ctx context.Context, cfg *config.AppConfig, db *sqlx.DB) (components.AppContext, error) {
+	jwtService := auth.NewJWTService(
+		cfg.JWT.SecretKey,
+		cfg.JWT.AccessTokenExpiry,
+		cfg.JWT.RefreshTokenExpiry,
+	)
+
+	return components.NewAppContext(db, jwtService), nil
 }
 
-func initializeModules(ctx context.Context, db *sqlx.DB, cfg *config.AppConfig) (*Modules, error) {
-	logger.Info(ctx, "Initializing application modules...")
-
-	// JWT configuration - using hardcoded values for now
-	// TODO: Move to config file
-	jwtConfig := config.JWT{
-		SecretKey:          cfg.JWT.SecretKey,
-		AccessTokenExpiry:  cfg.JWT.AccessTokenExpiry,
-		RefreshTokenExpiry: cfg.JWT.RefreshTokenExpiry,
-	}
-
-	// Initialize user module
-	userModule, err := user.NewModule(db, jwtConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize user module: %w", err)
-	}
-
-	logger.Info(ctx, "User module initialized successfully")
-
-	return &Modules{
-		UserModule: userModule,
-	}, nil
-}
-
-func setupHTTPServer(ctx context.Context, cfg *config.AppConfig, modules *Modules) *httpserver.Server {
+func setupHTTPServer(ctx context.Context, cfg *config.AppConfig, appCtx components.AppContext) *httpserver.Server {
 	logger.Info(ctx, "Setting up HTTP server...")
 
 	// Setup router with configuration
@@ -155,7 +142,7 @@ func setupHTTPServer(ctx context.Context, cfg *config.AppConfig, modules *Module
 	})
 
 	// Register module routes
-	registerRoutes(router, modules)
+	registerRoutes(router, appCtx)
 
 	// Create server with configuration
 	srv := httpserver.New(httpserver.Config{
@@ -172,9 +159,12 @@ func setupHTTPServer(ctx context.Context, cfg *config.AppConfig, modules *Module
 	return srv
 }
 
-func registerRoutes(router *gin.Engine, modules *Modules) {
+func registerRoutes(router *gin.Engine, appCtx components.AppContext) {
+	v1 := router.Group("/v1")
 	// Register user module routes
-	modules.UserModule.RegisterRoutes(router)
+	{
+		ports.RegisterUserRoutes(v1, appCtx)
+	}
 
 	// Add any additional module routes here
 }

@@ -29,7 +29,7 @@ func Init(cfg *Config) {
 			cfg = &Config{
 				Level:     slog.LevelInfo,
 				Output:    os.Stdout,
-				AddSource: true,
+				AddSource: false,
 			}
 		}
 

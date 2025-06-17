@@ -22,11 +22,6 @@ func NewSimpleSuccessResponse(data interface{}) *successRes {
 	return NewSuccessResponse(data, nil, nil)
 }
 
-// JSON sends the response as JSON with the specified status code
-func (r *successRes) JSON(c *gin.Context, statusCode int) {
-	c.JSON(statusCode, r)
-}
-
 // errorRes represents the error response structure
 type errorRes struct {
 	IsError bool        `json:"is_error"`

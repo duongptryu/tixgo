@@ -1,10 +1,10 @@
 include .env
 
 run:
-	go run ./cmd/main.go
+	go run ./cmd/api_server/main.go
 
 build:
-	go build -o bin/tixgo ./cmd/main.go
+	go build -o bin/tixgo ./cmd/api_server/main.go
 
 create_migration:
 	migrate create -ext=sql -dir=migrations/ -seq init_schema

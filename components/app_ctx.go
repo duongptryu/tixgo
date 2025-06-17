@@ -1,15 +1,29 @@
 package components
 
-import "github.com/jmoiron/sqlx"
+import (
+	"tixgo/shared/auth"
 
-type AppContext struct {
-	db *sqlx.DB
+	"github.com/jmoiron/sqlx"
+)
+
+type AppContext interface {
+	GetDB() *sqlx.DB
+	GetJWTService() *auth.JWTService
 }
 
-func NewAppContext(db *sqlx.DB) *AppContext {
-	return &AppContext{db: db}
+type appCtx struct {
+	db         *sqlx.DB
+	jwtService *auth.JWTService
 }
 
-func (c *AppContext) GetDB() *sqlx.DB {
+func NewAppContext(db *sqlx.DB, jwtService *auth.JWTService) *appCtx {
+	return &appCtx{db: db, jwtService: jwtService}
+}
+
+func (c *appCtx) GetDB() *sqlx.DB {
 	return c.db
+}
+
+func (c *appCtx) GetJWTService() *auth.JWTService {
+	return c.jwtService
 }

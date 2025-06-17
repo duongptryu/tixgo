@@ -2,7 +2,9 @@ package context
 
 import (
 	"context"
+	"strconv"
 	"tixgo/shared/auth"
+	"tixgo/shared/syserr"
 )
 
 // Context key types to avoid collisions
@@ -79,6 +81,18 @@ func GetUserIDFromContext(ctx context.Context) string {
 		}
 	}
 	return ""
+}
+
+func GetUserIDFromContextAsInt64(ctx context.Context) (int64, error) {
+	userID := GetUserIDFromContext(ctx)
+	if userID == "" {
+		return 0, syserr.New(syserr.UnauthorizedCode, "user not authenticated")
+	}
+	userIDInt64, err := strconv.ParseInt(userID, 10, 64)
+	if err != nil {
+		return 0, syserr.New(syserr.InternalCode, "invalid user ID")
+	}
+	return userIDInt64, nil
 }
 
 // User type context utilities

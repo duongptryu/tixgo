@@ -48,6 +48,8 @@ func setupViper(v *viper.Viper) {
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config")
 	v.AddConfigPath("/app/config")
+	v.AddConfigPath("../../")
+
 	v.SetConfigName("config")
 }
 
