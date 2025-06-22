@@ -1,9 +1,9 @@
 package domain
 
-import "tixgo/shared/syserr"
+import "github.com/duongptryu/gox/syserr"
 
 // Domain-specific error codes for client handling
-const (
+const (	
 	// User not found errors
 	UserNotFoundCode syserr.Code = "user_not_found"
 

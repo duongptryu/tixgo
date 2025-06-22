@@ -10,11 +10,12 @@ import (
 	"tixgo/components"
 	"tixgo/config"
 	"tixgo/modules/user/ports"
-	"tixgo/shared/auth"
-	"tixgo/shared/database"
-	"tixgo/shared/logger"
-	"tixgo/shared/server/httpserver"
-	"tixgo/shared/syserr"
+
+	"github.com/duongptryu/gox/auth"
+	"github.com/duongptryu/gox/database"
+	"github.com/duongptryu/gox/logger"
+	"github.com/duongptryu/gox/server/httpserver"
+	"github.com/duongptryu/gox/syserr"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-migrate/migrate/v4"
@@ -102,7 +103,19 @@ func runMigrations(ctx context.Context, db *sqlx.DB, cfg *config.Database) error
 	sqlDB := db.DB
 
 	// Create migration manager
-	migrationManager, err := database.NewMigrationManager(sqlDB, cfg)
+	migrationManager, err := database.NewMigrationManager(sqlDB, &database.Config{
+		Host:         cfg.Host,
+		Port:         cfg.Port,
+		User:         cfg.User,
+		Password:     cfg.Password,
+		Name:         cfg.Name,
+		SSLMode:      cfg.SSLMode,
+		Type:         cfg.Type,
+		MaxOpenConns: cfg.MaxOpenConns,
+		MaxIdleConns: cfg.MaxIdleConns,
+		MaxLifetime:  cfg.MaxLifetime,
+		MaxIdleTime:  cfg.MaxIdleTime,
+	}, cfg.MigrationPath)
 	if err != nil {
 		return fmt.Errorf("failed to create migration manager: %w", err)
 	}

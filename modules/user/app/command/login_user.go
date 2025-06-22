@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"tixgo/modules/user/domain"
-	"tixgo/shared/auth"
-	"tixgo/shared/syserr"
+	"github.com/duongptryu/gox/auth"
+	"github.com/duongptryu/gox/syserr"
 )
 
 // LoginUserCommand represents the command to login a user

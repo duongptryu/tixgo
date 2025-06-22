@@ -1,6 +1,6 @@
 module tixgo
 
-go 1.23.4
+go 1.24.3
 
 require (
 	github.com/go-playground/validator/v10 v10.26.0
@@ -21,6 +21,7 @@ require (
 )
 
 require (
+	github.com/duongptryu/gox v0.0.0-20250621034913-6cdae9ca0f5d // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect

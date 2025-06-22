@@ -7,7 +7,8 @@ import (
 	"math/big"
 
 	"tixgo/modules/user/domain"
-	"tixgo/shared/syserr"
+
+	"github.com/duongptryu/gox/syserr"
 )
 
 // RegisterUserCommand represents the command to register a new user

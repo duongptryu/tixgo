@@ -7,9 +7,10 @@ import (
 	"tixgo/modules/user/adapters"
 	"tixgo/modules/user/app/command"
 	"tixgo/modules/user/app/query"
-	"tixgo/shared/context"
-	"tixgo/shared/middleware"
-	"tixgo/shared/response"
+
+	"github.com/duongptryu/gox/context"
+	"github.com/duongptryu/gox/response"
+	"github.com/duongptryu/gox/server/middleware"
 
 	"github.com/gin-gonic/gin"
 )

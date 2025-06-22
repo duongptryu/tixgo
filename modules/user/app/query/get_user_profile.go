@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"tixgo/modules/user/domain"
-	"tixgo/shared/syserr"
+
+	"github.com/duongptryu/gox/syserr"
 )
 
 // GetUserProfileQuery represents the query to get user profile

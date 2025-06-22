@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"tixgo/modules/user/domain"
-	"tixgo/shared/syserr"
+
+	"github.com/duongptryu/gox/syserr"
 
 	"github.com/jmoiron/sqlx"
 )

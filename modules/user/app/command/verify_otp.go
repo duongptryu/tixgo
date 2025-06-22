@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"tixgo/modules/user/domain"
-	"tixgo/shared/syserr"
+
+	"github.com/duongptryu/gox/syserr"
 )
 
 // VerifyOTPCommand represents the command to verify OTP
 type VerifyOTPCommand struct {
-	Email string `json:"email"`
+	Email string `json:"email"`	
 	OTP   string `json:"otp"`
 }
 

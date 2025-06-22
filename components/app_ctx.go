@@ -1,7 +1,7 @@
 package components
 
 import (
-	"tixgo/shared/auth"
+	"github.com/duongptryu/gox/auth"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -16,7 +16,7 @@ type appCtx struct {
 	jwtService *auth.JWTService
 }
 
-func NewAppContext(db *sqlx.DB, jwtService *auth.JWTService) *appCtx {
+func NewAppContext(db *sqlx.DB, jwtService *auth.JWTService) AppContext {
 	return &appCtx{db: db, jwtService: jwtService}
 }
 

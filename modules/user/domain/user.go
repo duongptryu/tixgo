@@ -3,7 +3,7 @@ package domain
 import (
 	"time"
 
-	"tixgo/shared/syserr"
+	"github.com/duongptryu/gox/syserr"
 
 	"golang.org/x/crypto/bcrypt"
 )
