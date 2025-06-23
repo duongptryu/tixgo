@@ -9,6 +9,7 @@ import (
 type AppContext interface {
 	GetDB() *sqlx.DB
 	GetJWTService() *auth.JWTService
+	
 }
 
 type appCtx struct {

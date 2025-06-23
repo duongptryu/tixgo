@@ -149,6 +149,7 @@ func setupHTTPServer(ctx context.Context, cfg *config.AppConfig, appCtx componen
 
 	// Setup router with configuration
 	router := httpserver.SetupRouter(httpserver.RouterConfig{
+		ServiceName: cfg.App.Name,
 		Environment: cfg.App.Environment,
 		EnableCORS:  true,
 		EnableAuth:  true,

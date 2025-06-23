@@ -1,0 +1,261 @@
+# TixGo - Go Backend Scalability & Clean Architecture Cursor Rules
+
+## Project Context
+You are working on TixGo, a scalable Go backend project for a ticket selling platform that follows Clean Architecture, Domain-Driven Design (DDD), and SOLID principles. The project emphasizes maintainable, testable, and production-ready code.
+
+## Go Version & Dependencies
+- Go 1.24.3
+- Key frameworks: Gin (HTTP), SQLX (database), Gox (custom framework)
+- Database: PostgreSQL with migrations
+- Testing: testify
+- Event-driven: Command/Event Bus patterns
+
+## Project Structure
+```
+tixgo/
+├── cmd/api_server/           # Application entry points
+├── components/               # Shared application components (AppContext, etc.)
+├── modules/                  # Business modules (user, ticket, etc.)
+│   └── {module}/
+│       ├── adapters/         # Infrastructure layer (DB, external services)
+│       ├── app/             # Application layer
+│       │   ├── command/     # Command handlers (writes)
+│       │   └── query/       # Query handlers (reads)
+│       ├── domain/          # Domain layer (entities, aggregates, services)
+│       └── ports/           # Interface layer (HTTP handlers)
+├── config/                  # Configuration management
+├── migrations/              # Database migrations
+└── scripts/                 # Build and utility scripts
+```
+
+## Coding Standards & Best Practices
+
+### 1. Clean Architecture Layers
+- **Domain Layer**: Pure business logic, no external dependencies
+- **Application Layer**: Use cases, commands, queries, handlers
+- **Infrastructure Layer**: Database, external APIs, adapters
+- **Interface Layer**: HTTP handlers, gRPC services, CLI
+
+### 2. Domain-Driven Design
+- Use meaningful domain models and entities
+- Implement repositories as interfaces in domain, implementations in adapters
+- Apply aggregate patterns for consistency boundaries
+- Use domain events for cross-aggregate communication
+- Follow ubiquitous language from business domain
+
+### 3. Go Code Standards
+- Follow Go naming conventions: PascalCase for public, camelCase for private
+- Use meaningful package names (avoid generic names like utils, common)
+- Prefer composition over inheritance
+- Use interfaces for abstraction, concrete types for implementation
+- Always handle errors explicitly, never ignore them
+- Use context.Context for cancellation and timeouts
+
+### 4. Error Handling
+- Use the gox/syserr package for structured error handling
+- Wrap errors with context: `syserr.Wrap(err, syserr.InternalCode, "descriptive message")`
+- Define domain-specific errors in domain/errors.go
+- Return errors from handlers, don't handle HTTP status codes in business logic
+
+### 5. Repository Pattern
+```go
+// Domain interface
+type UserRepository interface {
+    Create(ctx context.Context, user *User) error
+    GetByID(ctx context.Context, id int64) (*User, error)
+    GetByEmail(ctx context.Context, email string) (*User, error)
+}
+
+// Adapter implementation
+type UserPostgresRepository struct {
+    db *sqlx.DB
+}
+```
+
+### 6. Command/Query Separation (CQRS)
+- Commands: Handle writes/mutations, return errors or simple results
+- Queries: Handle reads, return data transfer objects
+- Use separate handlers for commands and queries
+- Commands should be in `app/command/`, queries in `app/query/`
+
+### 7. HTTP Handlers Pattern
+```go
+func RegisterUser(appCtx components.AppContext) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        var req command.RegisterUserCommand
+        if err := c.ShouldBindJSON(&req); err != nil {
+            c.Error(err)
+            return
+        }
+        
+        // Dependency injection
+        handler := command.NewRegisterUserHandler(...)
+        
+        result, err := handler.Handle(c.Request.Context(), req)
+        if err != nil {
+            c.Error(err)
+            return
+        }
+        
+        c.JSON(http.StatusCreated, response.NewSimpleSuccessResponse(result))
+    }
+}
+```
+
+### 8. Testing Standards
+- Write unit tests for domain logic
+- Write integration tests for adapters
+- Use testify for assertions
+- Mock external dependencies
+- Test file naming: `*_test.go`
+- Test function naming: `Test{FunctionName}_{Scenario}`
+
+### 9. Database Patterns
+- Use migrations for schema changes (migrations/*.sql)
+- Use SQLX for database operations
+- Implement repository pattern with interfaces
+- Use database transactions for consistency
+- Follow PostgreSQL naming conventions (snake_case)
+
+### 10. Event-Driven Architecture
+- Use command bus for sending commands
+- Use event bus for domain events
+- Commands should be imperative (SendUserMailOTP)
+- Events should be past tense (UserRegistered)
+
+### 11. Filter and Pagination Pattern
+- **Separate Concerns**: Always separate filtering logic from pagination logic
+- **Filter Structs**: Create dedicated `FilterXXXQuery` structs for filtering parameters only
+- **Pagination**: Use `github.com/duongptryu/gox/pagination.Paging` struct for pagination logic
+- **Handler Signature**: Handlers should accept both parameters separately: `Handle(ctx, filters, paging)`
+- **HTTP Layer Binding**: Use separate `c.ShouldBind()` calls for filters and paging
+- **Parameter Binding**: Use `ShouldBind()` instead of `ShouldBindQuery()` for optional parameters
+- **Pagination Preparation**: Call `paging.Fulfill()` in HTTP layer to apply defaults
+
+```go
+// HTTP Layer - Parse and prepare data
+func ListItems(appCtx components.AppContext) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        var filters query.FilterItemsQuery
+        var paging pagination.Paging
+        
+        // Bind both structs separately
+        c.ShouldBind(&filters)
+        c.ShouldBind(&paging)
+        
+        // Apply pagination defaults in HTTP layer
+        paging.Fulfill()
+        
+        // Call handler with both parameters
+        handler := query.NewListItemsHandler(...)
+        result, err := handler.Handle(c.Request.Context(), filters, &paging)
+        // ...
+    }
+}
+
+// Application Layer - Business logic
+type FilterItemsQuery struct {
+    Name   string `form:"name"`
+    Status string `form:"status"`
+    Type   string `form:"type"`
+}
+
+type ListItemsHandler struct {
+    repo domain.ItemRepository
+}
+
+func (h *ListItemsHandler) Handle(ctx context.Context, filters FilterItemsQuery, paging *pagination.Paging) (*ItemListResult, error) {
+    // Convert to domain filters
+    domainFilters := domain.ItemFilters{
+        Name:   filters.Name,
+        Status: filters.Status,
+        Type:   filters.Type,
+    }
+    
+    return h.repo.List(ctx, domainFilters, *paging)
+}
+
+// Repository Layer - Data access
+func (r *ItemPostgresRepository) List(ctx context.Context, filters domain.ItemFilters, paging pagination.Paging) (*ItemListResult, error) {
+    // Use paging.GetOffset() and paging.Limit for database queries
+    offset := paging.GetOffset()
+    limit := paging.Limit
+    // ...
+}
+```
+
+## Specific Guidelines
+
+### File Naming
+- Go files: snake_case.go
+- Test files: *_test.go
+- SQL migrations: 000001_description.up.sql / 000001_description.down.sql
+
+### Package Organization
+- Each module should be self-contained
+- Avoid circular dependencies between modules
+- Use internal packages for module-private code
+- Export only what's necessary from packages
+
+### Configuration
+- Use Viper for configuration management
+- Environment-specific configs in config.yaml
+- Validate configuration on startup
+- Use typed configuration structs
+
+### Dependency Injection
+- Use constructor functions: NewXXXHandler(dependencies...)
+- Inject interfaces, not concrete types
+- AppContext pattern for shared dependencies
+- Avoid global variables
+
+### Concurrency
+- Use context.Context for cancellation
+- Implement proper cleanup with defer statements
+- Use channels for communication between goroutines
+- Avoid shared mutable state
+
+### Security
+- Validate all inputs
+- Use proper authentication/authorization
+- Sanitize user inputs
+- Use HTTPS in production
+- Implement proper password hashing
+
+## Code Review Checklist
+- [ ] Follows clean architecture layers
+- [ ] Proper error handling with context
+- [ ] Includes unit tests
+- [ ] No circular dependencies
+- [ ] Proper context usage
+- [ ] Database transactions where needed
+- [ ] Input validation
+- [ ] Meaningful variable/function names
+- [ ] Documentation for public APIs
+- [ ] Performance considerations
+
+## Performance Guidelines
+- Use database indexes appropriately
+- Implement caching where beneficial
+- Use connection pooling
+- Profile and benchmark critical paths
+- Avoid N+1 query problems
+- Use appropriate data structures
+
+## When suggesting code:
+1. Follow the established project structure
+2. Use existing patterns and conventions
+3. Include proper error handling
+4. Add necessary tests
+5. Consider scalability and maintainability
+6. Use dependency injection
+7. Follow Go idioms and best practices
+8. Include proper documentation
+
+## Remember:
+- Prioritize readability and maintainability
+- Write self-documenting code
+- Use meaningful names
+- Keep functions small and focused
+- Separate concerns appropriately
+- Always consider the business domain 

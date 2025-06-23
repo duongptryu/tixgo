@@ -36,9 +36,10 @@ func RegisterUser(appCtx components.AppContext) gin.HandlerFunc {
 		}
 
 		userRepo := adapters.NewUserPostgresRepository(appCtx.GetDB())
+		tempUserStore := adapters.NewInMemoryTempUserStore()
 		otpStore := adapters.NewInMemoryOTPStore()
 
-		biz := command.NewRegisterUserHandler(userRepo, otpStore)
+		biz := command.NewRegisterUserHandler(userRepo, tempUserStore, otpStore, nil)
 
 		result, err := biz.Handle(c.Request.Context(), req)
 		if err != nil {
@@ -59,9 +60,10 @@ func VerifyOTP(appCtx components.AppContext) gin.HandlerFunc {
 		}
 
 		userRepo := adapters.NewUserPostgresRepository(appCtx.GetDB())
+		tempUserStore := adapters.NewInMemoryTempUserStore()
 		otpStore := adapters.NewInMemoryOTPStore()
 
-		biz := command.NewVerifyOTPHandler(userRepo, otpStore)
+		biz := command.NewVerifyOTPHandler(userRepo, tempUserStore, otpStore)
 
 		result, err := biz.Handle(c.Request.Context(), req)
 		if err != nil {

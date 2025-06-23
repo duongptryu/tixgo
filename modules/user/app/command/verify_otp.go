@@ -10,7 +10,7 @@ import (
 
 // VerifyOTPCommand represents the command to verify OTP
 type VerifyOTPCommand struct {
-	Email string `json:"email"`	
+	Email string `json:"email"`
 	OTP   string `json:"otp"`
 }
 
@@ -22,15 +22,17 @@ type VerifyOTPResult struct {
 
 // VerifyOTPHandler handles OTP verification
 type VerifyOTPHandler struct {
-	userRepo domain.UserRepository
-	otpStore domain.OTPStore
+	userRepo      domain.UserRepository
+	tempUserStore domain.TempUserStore
+	otpStore      domain.OTPStore
 }
 
 // NewVerifyOTPHandler creates a new verify OTP handler
-func NewVerifyOTPHandler(userRepo domain.UserRepository, otpStore domain.OTPStore) *VerifyOTPHandler {
+func NewVerifyOTPHandler(userRepo domain.UserRepository, tempUserStore domain.TempUserStore, otpStore domain.OTPStore) *VerifyOTPHandler {
 	return &VerifyOTPHandler{
-		userRepo: userRepo,
-		otpStore: otpStore,
+		userRepo:      userRepo,
+		tempUserStore: tempUserStore,
+		otpStore:      otpStore,
 	}
 }
 
@@ -42,22 +44,29 @@ func (h *VerifyOTPHandler) Handle(ctx context.Context, cmd VerifyOTPCommand) (*V
 		return nil, domain.ErrInvalidOTP
 	}
 
-	// Get user by email
-	user, err := h.userRepo.GetByEmail(ctx, cmd.Email)
+	// Get user from temp store
+	user, err := h.tempUserStore.Get(ctx, cmd.Email)
 	if err != nil {
 		if err == domain.ErrUserNotFound {
 			return nil, domain.ErrUserNotFound
 		}
-		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to get user")
+		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to get temp user")
 	}
 
 	// Mark email as verified
 	user.VerifyEmail()
 
-	// Update user in repository
-	err = h.userRepo.Update(ctx, user)
+	// Save user to database (move from temp to permanent storage)
+	err = h.userRepo.Create(ctx, user)
 	if err != nil {
-		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to update user")
+		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to create user")
+	}
+
+	// Clean up temp store
+	err = h.tempUserStore.Delete(ctx, cmd.Email)
+	if err != nil {
+		// Log error but don't fail the operation since user is already created
+		// This is just cleanup
 	}
 
 	return &VerifyOTPResult{

@@ -8,6 +8,7 @@ import (
 
 	"tixgo/modules/user/domain"
 
+	"github.com/duongptryu/gox/eventbus"
 	"github.com/duongptryu/gox/syserr"
 )
 
@@ -22,21 +23,25 @@ type RegisterUserCommand struct {
 
 // RegisterUserResult represents the result of user registration
 type RegisterUserResult struct {
-	UserID int64  `json:"user_id"`
-	OTP    string `json:"otp"`
+	Email string `json:"email"`
+	OTP   string `json:"otp"`
 }
 
 // RegisterUserHandler handles user registration
 type RegisterUserHandler struct {
-	userRepo domain.UserRepository
-	otpStore domain.OTPStore
+	userRepo      domain.UserRepository
+	tempUserStore domain.TempUserStore
+	otpStore      domain.OTPStore
+	commandBus    eventbus.BusCommand
 }
 
 // NewRegisterUserHandler creates a new register user handler
-func NewRegisterUserHandler(userRepo domain.UserRepository, otpStore domain.OTPStore) *RegisterUserHandler {
+func NewRegisterUserHandler(userRepo domain.UserRepository, tempUserStore domain.TempUserStore, otpStore domain.OTPStore, commandBus eventbus.BusCommand) *RegisterUserHandler {
 	return &RegisterUserHandler{
-		userRepo: userRepo,
-		otpStore: otpStore,
+		userRepo:      userRepo,
+		tempUserStore: tempUserStore,
+		otpStore:      otpStore,
+		commandBus:    commandBus,
 	}
 }
 
@@ -47,12 +52,18 @@ func (h *RegisterUserHandler) Handle(ctx context.Context, cmd RegisterUserComman
 		return nil, domain.ErrInvalidUserType
 	}
 
-	// Check if user already exists
+	// Check if user already exists in database
 	existingUser, err := h.userRepo.GetByEmail(ctx, cmd.Email)
 	if err != nil && err != domain.ErrUserNotFound {
 		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to check existing user")
 	}
 	if existingUser != nil {
+		return nil, domain.ErrUserAlreadyExists
+	}
+
+	// Check if user already exists in temp store (pending verification)
+	tempUser, err := h.tempUserStore.Get(ctx, cmd.Email)
+	if err == nil && tempUser != nil {
 		return nil, domain.ErrUserAlreadyExists
 	}
 
@@ -62,10 +73,10 @@ func (h *RegisterUserHandler) Handle(ctx context.Context, cmd RegisterUserComman
 		return nil, err
 	}
 
-	// Save user to repository
-	err = h.userRepo.Create(ctx, user)
+	// Store user temporarily (not in database yet)
+	err = h.tempUserStore.Store(ctx, cmd.Email, user)
 	if err != nil {
-		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to create user")
+		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to store user temporarily")
 	}
 
 	// Generate OTP
@@ -80,9 +91,15 @@ func (h *RegisterUserHandler) Handle(ctx context.Context, cmd RegisterUserComman
 		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to store OTP")
 	}
 
+	// Publish event to send OTP to user
+	err = h.commandBus.PublishCommand(ctx, domain.NewCommandSendUserMailOTP(user.Email, otp))
+	if err != nil {
+		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to publish event send user mail otp")
+	}
+
 	return &RegisterUserResult{
-		UserID: user.ID,
-		OTP:    otp,
+		Email: user.Email,
+		OTP:   otp,
 	}, nil
 }
 

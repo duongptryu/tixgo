@@ -31,3 +31,15 @@ type OTPStore interface {
 	// Delete removes an OTP for a user email
 	Delete(ctx context.Context, email string) error
 }
+
+// TempUserStore defines the interface for temporary user storage during registration
+type TempUserStore interface {
+	// Store stores a user temporarily with expiration
+	Store(ctx context.Context, email string, user *User) error
+
+	// Get retrieves a temporary user by email
+	Get(ctx context.Context, email string) (*User, error)
+
+	// Delete removes a temporary user by email
+	Delete(ctx context.Context, email string) error
+}
