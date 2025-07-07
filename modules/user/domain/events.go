@@ -2,16 +2,14 @@ package domain
 
 import "time"
 
-type CommandSendUserMailOTP struct {
-	Email      string    `json:"email"`
-	OTP        string    `json:"otp"`
-	OccurredAt time.Time `json:"occurred_at"`
+type EventUserRegistered struct {
+	Email      string
+	OccurredAt time.Time
 }
 
-func NewCommandSendUserMailOTP(email string, otp string) *CommandSendUserMailOTP {
-	return &CommandSendUserMailOTP{
+func NewEventUserRegistered(email string) *EventUserRegistered {
+	return &EventUserRegistered{
 		Email:      email,
-		OTP:        otp,
 		OccurredAt: time.Now(),
 	}
 }

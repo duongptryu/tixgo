@@ -37,7 +37,7 @@ func NewVerifyOTPHandler(userRepo domain.UserRepository, tempUserStore domain.Te
 }
 
 // Handle executes the verify OTP command
-func (h *VerifyOTPHandler) Handle(ctx context.Context, cmd VerifyOTPCommand) (*VerifyOTPResult, error) {
+func (h *VerifyOTPHandler) Handle(ctx context.Context, cmd *VerifyOTPCommand) (*VerifyOTPResult, error) {
 	// Verify OTP
 	err := h.otpStore.Verify(ctx, cmd.Email, cmd.OTP)
 	if err != nil {

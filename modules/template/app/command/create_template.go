@@ -48,25 +48,25 @@ func NewCreateTemplateHandler(templateRepo domain.TemplateRepository, templateRe
 }
 
 // Handle executes the create template command
-func (h *CreateTemplateHandler) Handle(ctx context.Context, cmd CreateTemplateCommand) (*CreateTemplateResult, error) {
+func (h *CreateTemplateHandler) Handle(ctx context.Context, cmd CreateTemplateCommand) error {
 	// Validate template type
 	if !domain.IsValidTemplateType(cmd.Type) {
-		return nil, domain.ErrInvalidTemplateType
+		return domain.ErrInvalidTemplateType
 	}
 
 	// Check if template with slug already exists
 	existingTemplate, err := h.templateRepo.GetBySlug(ctx, cmd.Slug)
 	if err != nil && err != domain.ErrTemplateNotFound {
-		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to check existing template")
+		return syserr.Wrap(err, syserr.InternalCode, "failed to check existing template")
 	}
 	if existingTemplate != nil {
-		return nil, domain.ErrTemplateAlreadyExists
+		return domain.ErrTemplateAlreadyExists
 	}
 
 	// Validate template syntax
 	err = h.templateRenderer.ValidateTemplate(ctx, cmd.Content)
 	if err != nil {
-		return nil, syserr.Wrap(err, syserr.InvalidArgumentCode, "template syntax validation failed")
+		return syserr.Wrap(err, syserr.InvalidArgumentCode, "template syntax validation failed")
 	}
 
 	// Create new template
@@ -81,24 +81,14 @@ func (h *CreateTemplateHandler) Handle(ctx context.Context, cmd CreateTemplateCo
 		cmd.CreatedBy,
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Save template
 	err = h.templateRepo.Create(ctx, template)
 	if err != nil {
-		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to create template")
+		return syserr.Wrap(err, syserr.InternalCode, "failed to create template")
 	}
 
-	return &CreateTemplateResult{
-		ID:          template.ID,
-		Name:        template.Name,
-		Slug:        template.Slug,
-		Subject:     template.Subject,
-		Type:        template.Type,
-		Status:      template.Status,
-		Variables:   template.Variables,
-		Description: template.Description,
-		CreatedAt:   template.CreatedAt.Format("2006-01-02T15:04:05Z"),
-	}, nil
+	return nil
 }

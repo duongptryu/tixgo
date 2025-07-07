@@ -40,7 +40,7 @@ func NewGetUserProfileHandler(userRepo domain.UserRepository) *GetUserProfileHan
 }
 
 // Handle executes the get user profile query
-func (h *GetUserProfileHandler) Handle(ctx context.Context, query GetUserProfileQuery) (*UserProfileResult, error) {
+func (h *GetUserProfileHandler) Handle(ctx context.Context, query *GetUserProfileQuery) (*UserProfileResult, error) {
 	// Get user by ID
 	user, err := h.userRepo.GetByID(ctx, query.UserID)
 	if err != nil {

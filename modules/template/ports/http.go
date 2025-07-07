@@ -9,10 +9,8 @@ import (
 	"tixgo/modules/template/app/command"
 	"tixgo/modules/template/app/query"
 
-	"github.com/duongptryu/gox/context"
 	"github.com/duongptryu/gox/pagination"
 	"github.com/duongptryu/gox/response"
-	"github.com/duongptryu/gox/server/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +23,7 @@ func RegisterTemplateRoutes(router *gin.RouterGroup, appCtx components.AppContex
 		templateGroup.GET("/by-slug/:slug", GetTemplateBySlug(appCtx))
 
 		// Protected endpoints requiring authentication
-		templateGroup.Use(middleware.RequireAuth(appCtx.GetJWTService()))
+		// templateGroup.Use(middleware.RequireAuth(appCtx.GetJWTService()))
 		templateGroup.POST("", CreateTemplate(appCtx))
 		templateGroup.GET("", ListTemplates(appCtx))
 		templateGroup.GET("/:id", GetTemplate(appCtx))
@@ -43,25 +41,25 @@ func CreateTemplate(appCtx components.AppContext) gin.HandlerFunc {
 		}
 
 		// Get user ID from context
-		userID, err := context.GetUserIDFromContextAsInt64(c.Request.Context())
-		if err != nil {
-			c.Error(err)
-			return
-		}
-		req.CreatedBy = userID
+		// userID, err := context.GetUserIDFromContextAsInt64(c.Request.Context())
+		// if err != nil {
+		// 	c.Error(err)
+		// 	return
+		// }
+		req.CreatedBy = -1
 
 		templateRepo := adapters.NewTemplatePostgresRepository(appCtx.GetDB())
 		templateRenderer := adapters.NewHTMLTemplateRenderer()
 
 		handler := command.NewCreateTemplateHandler(templateRepo, templateRenderer)
 
-		result, err := handler.Handle(c.Request.Context(), req)
+		err := handler.Handle(c.Request.Context(), req)
 		if err != nil {
 			c.Error(err)
 			return
 		}
 
-		c.JSON(http.StatusCreated, response.NewSimpleSuccessResponse(result))
+		c.JSON(http.StatusCreated, response.NewSimpleSuccessResponse(true))
 	}
 }
 
@@ -87,13 +85,13 @@ func UpdateTemplate(appCtx components.AppContext) gin.HandlerFunc {
 
 		handler := command.NewUpdateTemplateHandler(templateRepo, templateRenderer)
 
-		result, err := handler.Handle(c.Request.Context(), req)
+		err = handler.Handle(c.Request.Context(), req)
 		if err != nil {
 			c.Error(err)
 			return
 		}
 
-		c.JSON(http.StatusOK, response.NewSimpleSuccessResponse(result))
+		c.JSON(http.StatusOK, response.NewSimpleSuccessResponse(true))
 	}
 }
 
@@ -163,13 +161,13 @@ func ListTemplates(appCtx components.AppContext) gin.HandlerFunc {
 		templateRepo := adapters.NewTemplatePostgresRepository(appCtx.GetDB())
 		handler := query.NewListTemplatesHandler(templateRepo)
 
-		result, err := handler.Handle(c.Request.Context(), filters, &paging)
+		result, err := handler.Handle(c.Request.Context(), &filters, &paging)
 		if err != nil {
 			c.Error(err)
 			return
 		}
 
-		c.JSON(http.StatusOK, response.NewSimpleSuccessResponse(result))
+		c.JSON(http.StatusOK, response.NewSuccessResponse(result, paging, filters))
 	}
 }
 
@@ -214,8 +212,6 @@ func DeleteTemplate(appCtx components.AppContext) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, response.NewSimpleSuccessResponse(map[string]string{
-			"message": "Template deleted successfully",
-		}))
+		c.JSON(http.StatusOK, response.NewSimpleSuccessResponse(true))
 	}
 }

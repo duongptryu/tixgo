@@ -2,13 +2,10 @@ package command
 
 import (
 	"context"
-	"crypto/rand"
-	"fmt"
-	"math/big"
 
 	"tixgo/modules/user/domain"
 
-	"github.com/duongptryu/gox/eventbus"
+	"github.com/duongptryu/gox/messaging"
 	"github.com/duongptryu/gox/syserr"
 )
 
@@ -32,21 +29,21 @@ type RegisterUserHandler struct {
 	userRepo      domain.UserRepository
 	tempUserStore domain.TempUserStore
 	otpStore      domain.OTPStore
-	commandBus    eventbus.BusCommand
+	eventBus      messaging.EventBus
 }
 
 // NewRegisterUserHandler creates a new register user handler
-func NewRegisterUserHandler(userRepo domain.UserRepository, tempUserStore domain.TempUserStore, otpStore domain.OTPStore, commandBus eventbus.BusCommand) *RegisterUserHandler {
+func NewRegisterUserHandler(userRepo domain.UserRepository, tempUserStore domain.TempUserStore, otpStore domain.OTPStore, eventBus messaging.EventBus) *RegisterUserHandler {
 	return &RegisterUserHandler{
 		userRepo:      userRepo,
 		tempUserStore: tempUserStore,
 		otpStore:      otpStore,
-		commandBus:    commandBus,
+		eventBus:      eventBus,
 	}
 }
 
 // Handle executes the register user command
-func (h *RegisterUserHandler) Handle(ctx context.Context, cmd RegisterUserCommand) (*RegisterUserResult, error) {
+func (h *RegisterUserHandler) Handle(ctx context.Context, cmd *RegisterUserCommand) (*RegisterUserResult, error) {
 	// Validate user type
 	if !domain.IsValidUserType(cmd.UserType) {
 		return nil, domain.ErrInvalidUserType
@@ -79,39 +76,13 @@ func (h *RegisterUserHandler) Handle(ctx context.Context, cmd RegisterUserComman
 		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to store user temporarily")
 	}
 
-	// Generate OTP
-	otp, err := generateOTP()
-	if err != nil {
-		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to generate OTP")
-	}
-
-	// Store OTP
-	err = h.otpStore.Store(ctx, cmd.Email, otp)
-	if err != nil {
-		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to store OTP")
-	}
-
 	// Publish event to send OTP to user
-	err = h.commandBus.PublishCommand(ctx, domain.NewCommandSendUserMailOTP(user.Email, otp))
+	err = h.eventBus.PublishEvent(ctx, domain.NewEventUserRegistered(user.Email))
 	if err != nil {
-		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to publish event send user mail otp")
+		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to publish event user registered")
 	}
 
 	return &RegisterUserResult{
 		Email: user.Email,
-		OTP:   otp,
 	}, nil
-}
-
-// generateOTP generates a 6-digit OTP
-func generateOTP() (string, error) {
-	max := big.NewInt(999999)
-	min := big.NewInt(100000)
-
-	n, err := rand.Int(rand.Reader, max.Sub(max, min).Add(max, big.NewInt(1)))
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%06d", n.Add(n, min).Int64()), nil
 }

@@ -47,21 +47,21 @@ func NewUpdateTemplateHandler(templateRepo domain.TemplateRepository, templateRe
 }
 
 // Handle executes the update template command
-func (h *UpdateTemplateHandler) Handle(ctx context.Context, cmd UpdateTemplateCommand) (*UpdateTemplateResult, error) {
+func (h *UpdateTemplateHandler) Handle(ctx context.Context, cmd UpdateTemplateCommand) error {
 	// Get existing template
 	template, err := h.templateRepo.GetByID(ctx, cmd.ID)
 	if err != nil {
 		if err == domain.ErrTemplateNotFound {
-			return nil, domain.ErrTemplateNotFound
+			return domain.ErrTemplateNotFound
 		}
-		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to get template")
+		return syserr.Wrap(err, syserr.InternalCode, "failed to get template")
 	}
 
 	// Validate template content if provided
 	if cmd.Content != "" {
 		err = h.templateRenderer.ValidateTemplate(ctx, cmd.Content)
 		if err != nil {
-			return nil, syserr.Wrap(err, syserr.InvalidArgumentCode, "template syntax validation failed")
+			return syserr.Wrap(err, syserr.InvalidArgumentCode, "template syntax validation failed")
 		}
 	}
 
@@ -78,25 +78,15 @@ func (h *UpdateTemplateHandler) Handle(ctx context.Context, cmd UpdateTemplateCo
 		case domain.TemplateStatusDraft:
 			template.Status = domain.TemplateStatusDraft
 		default:
-			return nil, domain.ErrInvalidTemplateStatus
+			return domain.ErrInvalidTemplateStatus
 		}
 	}
 
 	// Save updated template
 	err = h.templateRepo.Update(ctx, template)
 	if err != nil {
-		return nil, syserr.Wrap(err, syserr.InternalCode, "failed to update template")
+		return syserr.Wrap(err, syserr.InternalCode, "failed to update template")
 	}
 
-	return &UpdateTemplateResult{
-		ID:          template.ID,
-		Name:        template.Name,
-		Slug:        template.Slug,
-		Subject:     template.Subject,
-		Type:        template.Type,
-		Status:      template.Status,
-		Variables:   template.Variables,
-		Description: template.Description,
-		UpdatedAt:   template.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-	}, nil
+	return nil
 }

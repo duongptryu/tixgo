@@ -20,7 +20,6 @@ type FilterTemplatesQuery struct {
 // ListTemplatesResult represents the result of template listing
 type ListTemplatesResult struct {
 	Templates []*TemplateListItem `json:"templates"`
-	Paging    *pagination.Paging  `json:"paging"`
 }
 
 // TemplateListItem represents a template item in the list
@@ -50,7 +49,7 @@ func NewListTemplatesHandler(templateRepo domain.TemplateRepository) *ListTempla
 }
 
 // Handle executes the list templates query
-func (h *ListTemplatesHandler) Handle(ctx context.Context, filters FilterTemplatesQuery, paging *pagination.Paging) (*ListTemplatesResult, error) {
+func (h *ListTemplatesHandler) Handle(ctx context.Context, filters *FilterTemplatesQuery, paging *pagination.Paging) ([]TemplateListItem, error) {
 	// Ensure paging is not nil (should already be handled in HTTP layer)
 	if paging == nil {
 		paging = &pagination.Paging{}
@@ -94,9 +93,9 @@ func (h *ListTemplatesHandler) Handle(ctx context.Context, filters FilterTemplat
 	}
 
 	// Convert to list items
-	items := make([]*TemplateListItem, len(templates))
+	items := make([]TemplateListItem, len(templates))
 	for i, template := range templates {
-		items[i] = &TemplateListItem{
+		items[i] = TemplateListItem{
 			ID:          template.ID,
 			Name:        template.Name,
 			Slug:        template.Slug,
@@ -110,8 +109,5 @@ func (h *ListTemplatesHandler) Handle(ctx context.Context, filters FilterTemplat
 		}
 	}
 
-	return &ListTemplatesResult{
-		Templates: items,
-		Paging:    paging,
-	}, nil
+	return items, nil
 }

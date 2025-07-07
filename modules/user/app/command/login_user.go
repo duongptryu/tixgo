@@ -38,7 +38,7 @@ func NewLoginUserHandler(userRepo domain.UserRepository, jwtService *auth.JWTSer
 }
 
 // Handle executes the login user command
-func (h *LoginUserHandler) Handle(ctx context.Context, cmd LoginUserCommand) (*LoginUserResult, error) {
+func (h *LoginUserHandler) Handle(ctx context.Context, cmd *LoginUserCommand) (*LoginUserResult, error) {
 	// Get user by email
 	user, err := h.userRepo.GetByEmail(ctx, cmd.Email)
 	if err != nil {

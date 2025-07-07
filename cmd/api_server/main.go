@@ -9,11 +9,16 @@ import (
 
 	"tixgo/components"
 	"tixgo/config"
-	"tixgo/modules/user/ports"
+	templatePort "tixgo/modules/template/ports"
+	userPort "tixgo/modules/user/ports"
 
+	"github.com/IBM/sarama"
+	"github.com/ThreeDotsLabs/watermill"
+	"github.com/ThreeDotsLabs/watermill-kafka/v3/pkg/kafka"
 	"github.com/duongptryu/gox/auth"
 	"github.com/duongptryu/gox/database"
 	"github.com/duongptryu/gox/logger"
+	"github.com/duongptryu/gox/messaging"
 	"github.com/duongptryu/gox/server/httpserver"
 	"github.com/duongptryu/gox/syserr"
 
@@ -63,6 +68,9 @@ func main() {
 	if err != nil {
 		logger.Fatal(ctx, "Failed to initialize app context", logger.F("error", err))
 	}
+
+	// register event handlers
+	registerEventHandlers(appCtx)
 
 	// Setup HTTP server using server package
 	srv := setupHTTPServer(ctx, cfg, appCtx)
@@ -141,7 +149,43 @@ func setupAppCtx(ctx context.Context, cfg *config.AppConfig, db *sqlx.DB) (compo
 		cfg.JWT.RefreshTokenExpiry,
 	)
 
-	return components.NewAppContext(db, jwtService), nil
+	// init publisher
+	saramaSubscriberConfig := kafka.DefaultSaramaSubscriberConfig()
+	saramaSubscriberConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
+	kafkaSub, err := kafka.NewSubscriber(
+		kafka.SubscriberConfig{
+			Brokers:               cfg.Kafka.Brokers,
+			Unmarshaler:           kafka.DefaultMarshaler{},
+			OverwriteSaramaConfig: saramaSubscriberConfig,
+			ConsumerGroup:         "tixgo_consumer_group",
+		},
+		watermill.NewSlogLogger(logger.GetLogger()),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kafka subscriber: %w", err)
+	}
+
+	kafkaPub, err := kafka.NewPublisher(
+		kafka.PublisherConfig{
+			Brokers:   cfg.Kafka.Brokers,
+			Marshaler: kafka.DefaultMarshaler{},
+		},
+		watermill.NewSlogLogger(logger.GetLogger()),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kafka publisher: %w", err)
+	}
+
+	messagingBus, err := messaging.NewBus(messaging.Config{
+		Publisher:  kafkaPub,
+		Subscriber: kafkaSub,
+		Logger:     logger.GetLogger(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create messaging bus: %w", err)
+	}
+
+	return components.NewAppContext(db, jwtService, messagingBus, messagingBus, messagingBus), nil
 }
 
 func setupHTTPServer(ctx context.Context, cfg *config.AppConfig, appCtx components.AppContext) *httpserver.Server {
@@ -177,10 +221,15 @@ func registerRoutes(router *gin.Engine, appCtx components.AppContext) {
 	v1 := router.Group("/v1")
 	// Register user module routes
 	{
-		ports.RegisterUserRoutes(v1, appCtx)
+		userPort.RegisterUserRoutes(v1, appCtx)
+		templatePort.RegisterTemplateRoutes(v1, appCtx)
 	}
 
 	// Add any additional module routes here
+}
+
+func registerEventHandlers(appCtx components.AppContext) {
+	userPort.RegisterUserEventHandlers(appCtx.GetDispatcher(), appCtx)
 }
 
 func startServer(ctx context.Context, srv *httpserver.Server) {

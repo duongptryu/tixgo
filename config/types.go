@@ -11,6 +11,7 @@ type AppConfig struct {
 	Server   Server   `mapstructure:"server"`
 	Database Database `mapstructure:"database"`
 	JWT      JWT      `mapstructure:"jwt"`
+	Kafka    Kafka    `mapstructure:"kafka"`
 }
 
 type App struct {
@@ -46,6 +47,17 @@ type JWT struct {
 	SecretKey          string        `mapstructure:"secret_key" validate:"required"`
 	AccessTokenExpiry  time.Duration `mapstructure:"access_token_expiry" validate:"required,min=1s"`
 	RefreshTokenExpiry time.Duration `mapstructure:"refresh_token_expiry" validate:"required,min=1s"`
+}
+
+// type Redis struct {
+// 	Host     string `mapstructure:"host" validate:"required,hostname"`
+// 	Port     int    `mapstructure:"port" validate:"required,min=1,max=65535"`
+// 	Password string `mapstructure:"password"`
+// 	DB       int    `mapstructure:"db"` // default 0
+// }
+
+type Kafka struct {
+	Brokers []string `mapstructure:"brokers" validate:"required,min=1"`
 }
 
 func (c *AppConfig) Validate() error {

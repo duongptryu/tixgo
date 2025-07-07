@@ -41,7 +41,7 @@ func RegisterUser(appCtx components.AppContext) gin.HandlerFunc {
 
 		biz := command.NewRegisterUserHandler(userRepo, tempUserStore, otpStore, nil)
 
-		result, err := biz.Handle(c.Request.Context(), req)
+		result, err := biz.Handle(c.Request.Context(), &req)
 		if err != nil {
 			c.Error(err)
 			return
@@ -65,7 +65,7 @@ func VerifyOTP(appCtx components.AppContext) gin.HandlerFunc {
 
 		biz := command.NewVerifyOTPHandler(userRepo, tempUserStore, otpStore)
 
-		result, err := biz.Handle(c.Request.Context(), req)
+		result, err := biz.Handle(c.Request.Context(), &req)
 		if err != nil {
 			c.Error(err)
 			return
@@ -87,7 +87,7 @@ func LoginUser(appCtx components.AppContext) gin.HandlerFunc {
 
 		biz := command.NewLoginUserHandler(userRepo, appCtx.GetJWTService())
 
-		result, err := biz.Handle(c.Request.Context(), req)
+		result, err := biz.Handle(c.Request.Context(), &req)
 		if err != nil {
 			c.Error(err)
 			return
@@ -108,7 +108,7 @@ func GetUserProfile(appCtx components.AppContext) gin.HandlerFunc {
 		userRepo := adapters.NewUserPostgresRepository(appCtx.GetDB())
 		biz := query.NewGetUserProfileHandler(userRepo)
 
-		result, err := biz.Handle(c.Request.Context(), query.GetUserProfileQuery{
+		result, err := biz.Handle(c.Request.Context(), &query.GetUserProfileQuery{
 			UserID: userIDInt64,
 		})
 		if err != nil {

@@ -28,3 +28,7 @@ jwt:
   secret_key: "secret"
   access_token_expiry: 900s
   refresh_token_expiry: 604800s
+
+kafka:
+  brokers:
+    - localhost:9092
