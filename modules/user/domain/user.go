@@ -44,7 +44,7 @@ type User struct {
 }
 
 // NewUser creates a new user with hashed password
-func NewUser(email, password, firstName, lastName string, userType UserType) (*User, error) {
+func NewUserCustomer(email, password, firstName, lastName string) (*User, error) {
 	if email == "" {
 		return nil, syserr.New(syserr.InvalidArgumentCode, "email is required")
 	}
@@ -69,7 +69,7 @@ func NewUser(email, password, firstName, lastName string, userType UserType) (*U
 		PasswordHash:  hashedPassword,
 		FirstName:     firstName,
 		LastName:      lastName,
-		UserType:      userType,
+		UserType:      UserTypeCustomer,
 		Status:        UserStatusActive,
 		EmailVerified: false,
 		CreatedAt:     now,

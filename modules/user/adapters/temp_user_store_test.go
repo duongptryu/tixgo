@@ -18,7 +18,7 @@ func TestInMemoryTempUserStore_Store(t *testing.T) {
 	ctx := context.Background()
 	email := "test@example.com"
 
-	user, err := domain.NewUser(email, "password123", "John", "Doe", domain.UserTypeCustomer)
+	user, err := domain.NewUserCustomer(email, "password123", "John", "Doe")
 	require.NoError(t, err)
 
 	err = store.Store(ctx, email, user)
@@ -50,7 +50,7 @@ func TestInMemoryTempUserStore_Delete(t *testing.T) {
 	ctx := context.Background()
 	email := "test@example.com"
 
-	user, err := domain.NewUser(email, "password123", "John", "Doe", domain.UserTypeCustomer)
+	user, err := domain.NewUserCustomer(email, "password123", "John", "Doe")
 	require.NoError(t, err)
 
 	// Store user
@@ -77,7 +77,7 @@ func TestInMemoryTempUserStore_Expiration(t *testing.T) {
 	ctx := context.Background()
 	email := "test@example.com"
 
-	user, err := domain.NewUser(email, "password123", "John", "Doe", domain.UserTypeCustomer)
+	user, err := domain.NewUserCustomer(email, "password123", "John", "Doe")
 	require.NoError(t, err)
 
 	// Manually set a very short expiration for testing
@@ -104,10 +104,10 @@ func TestInMemoryTempUserStore_CleanupExpired(t *testing.T) {
 	email1 := "test1@example.com"
 	email2 := "test2@example.com"
 
-	user1, err := domain.NewUser(email1, "password123", "John", "Doe", domain.UserTypeCustomer)
+	user1, err := domain.NewUserCustomer(email1, "password123", "John", "Doe")
 	require.NoError(t, err)
 
-	user2, err := domain.NewUser(email2, "password123", "Jane", "Smith", domain.UserTypeCustomer)
+	user2, err := domain.NewUserCustomer(email2, "password123", "Jane", "Smith")
 	require.NoError(t, err)
 
 	// Store both users with different expirations

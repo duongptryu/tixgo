@@ -39,7 +39,7 @@ func RegisterUser(appCtx components.AppContext) gin.HandlerFunc {
 		tempUserStore := adapters.NewInMemoryTempUserStore()
 		otpStore := adapters.NewInMemoryOTPStore()
 
-		biz := command.NewRegisterUserHandler(userRepo, tempUserStore, otpStore, nil)
+		biz := command.NewRegisterUserHandler(userRepo, tempUserStore, otpStore, appCtx.GetEventBus())
 
 		result, err := biz.Handle(c.Request.Context(), &req)
 		if err != nil {

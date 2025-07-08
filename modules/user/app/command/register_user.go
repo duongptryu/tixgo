@@ -11,11 +11,11 @@ import (
 
 // RegisterUserCommand represents the command to register a new user
 type RegisterUserCommand struct {
-	Email     string `json:"email" validate:"required,email"`
-	Password  string `json:"password" validate:"required,min=8"`
-	FirstName string `json:"first_name" validate:"required"`
-	LastName  string `json:"last_name" validate:"required"`
-	UserType  string `json:"-" validate:"default=customer"`
+	Email     string `json:"email" binding:"required,email"`
+	Password  string `json:"password" binding:"required,min=8"`
+	FirstName string `json:"first_name" binding:"required"`
+	LastName  string `json:"last_name" binding:"required"`
+	UserType  string `json:"-"`
 }
 
 // RegisterUserResult represents the result of user registration
@@ -44,11 +44,6 @@ func NewRegisterUserHandler(userRepo domain.UserRepository, tempUserStore domain
 
 // Handle executes the register user command
 func (h *RegisterUserHandler) Handle(ctx context.Context, cmd *RegisterUserCommand) (*RegisterUserResult, error) {
-	// Validate user type
-	if !domain.IsValidUserType(cmd.UserType) {
-		return nil, domain.ErrInvalidUserType
-	}
-
 	// Check if user already exists in database
 	existingUser, err := h.userRepo.GetByEmail(ctx, cmd.Email)
 	if err != nil && err != domain.ErrUserNotFound {
@@ -65,7 +60,7 @@ func (h *RegisterUserHandler) Handle(ctx context.Context, cmd *RegisterUserComma
 	}
 
 	// Create new user
-	user, err := domain.NewUser(cmd.Email, cmd.Password, cmd.FirstName, cmd.LastName, domain.UserType(cmd.UserType))
+	user, err := domain.NewUserCustomer(cmd.Email, cmd.Password, cmd.FirstName, cmd.LastName)
 	if err != nil {
 		return nil, err
 	}

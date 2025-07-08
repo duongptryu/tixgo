@@ -70,7 +70,7 @@ func main() {
 	}
 
 	// register event handlers
-	registerEventHandlers(appCtx)
+	startMessagingHandler(ctx, appCtx)
 
 	// Setup HTTP server using server package
 	srv := setupHTTPServer(ctx, cfg, appCtx)
@@ -228,8 +228,12 @@ func registerRoutes(router *gin.Engine, appCtx components.AppContext) {
 	// Add any additional module routes here
 }
 
-func registerEventHandlers(appCtx components.AppContext) {
-	userPort.RegisterUserEventHandlers(appCtx.GetDispatcher(), appCtx)
+func startMessagingHandler(ctx context.Context, appCtx components.AppContext) {
+	dispatcher := appCtx.GetDispatcher()
+
+	userPort.NewUserMessagingHandlers(dispatcher, appCtx).RegisterUserMessagingHandlers()
+
+	go dispatcher.Run(ctx)
 }
 
 func startServer(ctx context.Context, srv *httpserver.Server) {

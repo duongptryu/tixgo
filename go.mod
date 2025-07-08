@@ -14,13 +14,16 @@ require (
 require github.com/lib/pq v1.10.9
 
 require (
+	github.com/IBM/sarama v1.43.3
+	github.com/ThreeDotsLabs/watermill-kafka/v3 v3.0.6
+	github.com/duongptryu/gox v0.0.3
 	github.com/gin-gonic/gin v1.10.1
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/stretchr/testify v1.10.0
 )
 
 require (
-	github.com/ThreeDotsLabs/watermill v1.4.6 // indirect
+	github.com/ThreeDotsLabs/watermill v1.4.6
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
@@ -30,14 +33,12 @@ require (
 )
 
 require (
-	github.com/IBM/sarama v1.43.3 // indirect
-	github.com/ThreeDotsLabs/watermill-kafka/v3 v3.0.6 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
+	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/dnwe/otelsarama v0.0.0-20240308230250-9388d9d40bc0 // indirect
-	github.com/duongptryu/gox v0.0.3-0.20250707154558-3c9fd4d645de // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
@@ -71,6 +72,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
+	github.com/sony/gobreaker v1.0.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.12.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
